@@ -4,6 +4,7 @@ import Network.Wai.Handler.Warp (run)
 import Servant (Proxy (..), Server, serve)
 
 import API (API)
+import DB (createDB)
 import Handlers (register)
 
 port :: Int
@@ -17,5 +18,6 @@ server = register
 
 main :: IO ()
 main = do
+  createDB
   print $ "Running on port " ++ show port
   run port $ serve api server
