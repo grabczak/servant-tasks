@@ -21,6 +21,15 @@ description: Please see the README on GitHub at <https://github.com/grabczak/ser
 
 dependencies:
   - base >= 4.7 && < 5
+  - aeson
+  - password
+  - servant
+  - servant
+  - servant-auth-server
+  - servant-server
+  - sqlite-simple
+  - wai
+  - warp
 
 ghc-options:
   - -Wall
