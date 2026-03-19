@@ -11,6 +11,7 @@ module DB (
   selectUserByCredentials,
 ) where
 
+import qualified Data.Text as T
 import Database.SQLite.Simple
 
 import API
@@ -29,6 +30,10 @@ createDB = withConnection dbName $ \conn -> do
         <> "password TEXT NOT NULL"
         <> ")"
 
+selectFirst :: [a] -> Maybe a
+selectFirst [] = Nothing
+selectFirst (x : _) = Just x
+
 insertUser :: UserAuth -> IO Int
 insertUser UserAuth{name, password} = withConnection dbName $ \conn -> do
   hashed <- createHash password
@@ -39,20 +44,20 @@ insertUser UserAuth{name, password} = withConnection dbName $ \conn -> do
 selectUserByName :: String -> IO (Maybe UserData)
 selectUserByName name = withConnection dbName $ \conn -> do
   result <- query conn "SELECT id, name FROM users WHERE name = ?" (Only name)
-  return $ case result of
-    [] -> Nothing
-    (user : _) -> Just user
+  return $ selectFirst result
 
 selectUserById :: Int -> IO (Maybe UserData)
 selectUserById id = withConnection dbName $ \conn -> do
   result <- query conn "SELECT id, name FROM users WHERE id = ?" (Only id)
-  return $ case result of
-    [] -> Nothing
-    (user : _) -> Just user
+  return $ selectFirst result
 
-selectUserByCredentials :: String -> String -> IO (Maybe UserFull)
-selectUserByCredentials name password = withConnection dbName $ \conn -> do
-  result <- query conn "SELECT id, name, password FROM users WHERE name = ? AND password =  ?" (name, password)
-  return $ case result of
-    [] -> Nothing
-    (user : _) -> Just user
+selectUserByCredentials :: String -> String -> IO (Maybe UserData)
+selectUserByCredentials _name _password = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, name, password FROM users WHERE name = ?" (Only _name)
+  case selectFirst result of
+    Nothing -> return Nothing
+    Just UserFull{id, name, password} -> do
+      isValid <- verifyHash _password (T.pack password)
+      return $ case isValid of
+        False -> Nothing
+        True -> Just $ UserData{id, name}
