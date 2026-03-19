@@ -22,12 +22,14 @@ description: Please see the README on GitHub at <https://github.com/grabczak/ser
 dependencies:
   - base >= 4.7 && < 5
   - aeson
+  - bytestring
   - password
   - servant
   - servant
   - servant-auth-server
   - servant-server
   - sqlite-simple
+  - text
   - wai
   - warp
 

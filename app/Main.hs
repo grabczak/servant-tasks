@@ -1,23 +1,31 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Main (main) where
 
-import Network.Wai.Handler.Warp (run)
-import Servant (Proxy (..), Server, serve)
+import Network.Wai.Handler.Warp
+import Servant
+import Servant.Auth.Server
 
-import API (API)
-import DB (createDB)
-import Handlers (register)
+import API
+import DB
+import Handlers
 
 port :: Int
 port = 8080
 
-api :: Proxy API
-api = Proxy
-
-server :: Server API
-server = register
+server :: CookieSettings -> JWTSettings -> Server API
+server cookieSettings jwtSettings = register :<|> login cookieSettings jwtSettings
 
 main :: IO ()
 main = do
   createDB
+
+  jwtSecretKey <- generateKey
+
+  let cookieSettings = defaultCookieSettings
+  let jwtSettings = defaultJWTSettings jwtSecretKey
+  let config = cookieSettings :. jwtSettings :. EmptyContext
+
   print $ "Running on port " ++ show port
-  run port $ serve api server
+  run port $ serveWithContext (Proxy :: Proxy API) config $ server cookieSettings jwtSettings
