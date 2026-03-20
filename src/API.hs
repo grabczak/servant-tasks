@@ -42,3 +42,4 @@ type API =
   "auth" :> "register" :> ReqBody '[JSON] UserAuth :> PostCreated '[JSON] UserData
     :<|> "auth" :> "login" :> ReqBody '[JSON] UserAuth :> Post '[JSON] (AuthHeaders String)
     :<|> Protected :> "user" :> "me" :> Get '[JSON] UserData
+    :<|> Protected :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData

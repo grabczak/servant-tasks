@@ -9,6 +9,7 @@ module DB (
   selectUserByName,
   selectUserById,
   selectUserByCredentials,
+  updateUserById,
 ) where
 
 import qualified Data.Text as T
@@ -61,3 +62,9 @@ selectUserByCredentials _name _password = withConnection dbName $ \conn -> do
       return $ case isValid of
         False -> Nothing
         True -> Just $ UserData{id, name}
+
+updateUserById :: Int -> UserAuth -> IO (Maybe UserData)
+updateUserById id UserAuth{name, password} = withConnection dbName $ \conn -> do
+  hashed <- createHash password
+  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
+  selectUserById id

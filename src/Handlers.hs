@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module Handlers (register, login, userGet) where
+module Handlers (register, login, userGet, userPut) where
 
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy.Char8 as BSC
@@ -48,3 +48,15 @@ userGet (Authenticated UserData{id}) = do
     Nothing -> throwError err404{errBody = "User not found"}
     Just user -> return user
 userGet _ = throwError err401{errBody = "Authentication required"}
+
+userPut :: AuthResult UserData -> UserAuth -> Handler UserData
+userPut (Authenticated UserData{id}) userAuth = do
+  user <- liftIO $ selectUserById id
+  case user of
+    Nothing -> throwError err404{errBody = "User not found"}
+    Just _ -> do
+      updatedUser <- liftIO $ updateUserById id userAuth
+      case updatedUser of
+        Nothing -> throwError err500{errBody = "Failed to update user"}
+        Just user -> return user
+userPut _ _ = throwError err401{errBody = "Authentication required"}
