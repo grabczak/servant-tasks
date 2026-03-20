@@ -26,24 +26,20 @@ register UserAuth{name, password} = do
         Nothing -> throwError err500{errBody = "Failed to retrieve user after registration"}
         Just user -> return user
 
-login ::
-  CookieSettings ->
-  JWTSettings ->
-  UserAuth ->
-  Handler (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
-login cookieSettings jwtSettings UserAuth{name = _name, password = _password} = do
-  user <- liftIO $ selectUserByCredentials _name _password
+login :: CookieSettings -> JWTSettings -> UserAuth -> Handler (AuthHeaders String)
+login cookieSettings jwtSettings UserAuth{name, password} = do
+  user <- liftIO $ selectUserByCredentials name password
   case user of
     Nothing -> throwError err401{errBody = "Invalid credentials"}
     Just user -> do
       loginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings user
       case loginAccepted of
         Nothing -> throwError err401{errBody = "Login failed"}
-        Just x -> do
+        Just headerBuilder -> do
           jwt <- liftIO $ makeJWT user jwtSettings Nothing
           case jwt of
             Left _ -> throwError err401{errBody = "JWT creation failed"}
-            Right r -> return $ x (BSC.unpack r)
+            Right token -> return $ headerBuilder (BSC.unpack token)
 
 userGet :: AuthResult UserData -> Handler UserData
 userGet (Authenticated UserData{id}) = do

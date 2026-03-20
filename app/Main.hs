@@ -14,6 +14,9 @@ import Handlers
 port :: Int
 port = 8080
 
+proxy :: Proxy API
+proxy = Proxy
+
 server :: CookieSettings -> JWTSettings -> Server API
 server cookieSettings jwtSettings =
   register
@@ -31,4 +34,4 @@ main = do
   let config = cookieSettings :. jwtSettings :. EmptyContext
 
   print $ "Running on port " ++ show port
-  run port $ serveWithContext (Proxy :: Proxy API) config $ server cookieSettings jwtSettings
+  run port $ serveWithContext proxy config $ server cookieSettings jwtSettings
