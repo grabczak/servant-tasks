@@ -15,7 +15,10 @@ port :: Int
 port = 8080
 
 server :: CookieSettings -> JWTSettings -> Server API
-server cookieSettings jwtSettings = register :<|> login cookieSettings jwtSettings
+server cookieSettings jwtSettings =
+  register
+    :<|> login cookieSettings jwtSettings
+    :<|> userGet
 
 main :: IO ()
 main = do

@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module Handlers (register, login) where
+module Handlers (register, login, userGet) where
 
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy.Char8 as BSC
@@ -44,3 +44,11 @@ login cookieSettings jwtSettings UserAuth{name = _name, password = _password} = 
           case jwt of
             Left _ -> throwError err401{errBody = "JWT creation failed"}
             Right r -> return $ x (BSC.unpack r)
+
+userGet :: AuthResult UserData -> Handler UserData
+userGet (Authenticated UserData{id}) = do
+  user <- liftIO $ selectUserById id
+  case user of
+    Nothing -> throwError err404{errBody = "User not found"}
+    Just user -> return user
+userGet _ = throwError err401{errBody = "Authentication required"}

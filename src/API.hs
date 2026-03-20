@@ -37,3 +37,4 @@ data UserFull = UserFull
 type API =
   "auth" :> "register" :> ReqBody '[JSON] UserAuth :> PostCreated '[JSON] UserData
     :<|> "auth" :> "login" :> ReqBody '[JSON] UserAuth :> Post '[JSON] (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] String)
+    :<|> Auth '[Cookie, JWT] UserData :> "user" :> "me" :> Get '[JSON] UserData
