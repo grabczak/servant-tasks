@@ -14,6 +14,7 @@ module DB (
   selectTasksByUserId,
   insertTaskByUserId,
   updateTaskById,
+  deleteTaskById,
 ) where
 
 import qualified Data.Text as T
@@ -103,3 +104,7 @@ updateTaskById :: Int -> TaskCreate -> IO (Maybe TaskFull)
 updateTaskById taskId TaskCreate{title, description} = withConnection dbName $ \conn -> do
   execute conn "UPDATE tasks SET title = ?, description = ? WHERE id = ?" (title, description, taskId)
   selectTaskById taskId
+
+deleteTaskById :: Int -> IO ()
+deleteTaskById taskId = withConnection dbName $ \conn -> do
+  execute conn "DELETE FROM tasks WHERE id = ?" (Only taskId)

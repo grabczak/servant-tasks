@@ -27,6 +27,7 @@ server cookieSettings jwtSettings =
     :<|> tasksPost
     :<|> taskGet
     :<|> taskPut
+    :<|> taskDelete
 
 main :: IO ()
 main = do
