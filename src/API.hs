@@ -4,7 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeOperators #-}
 
-module API (UserAuth (..), UserData (..), UserFull (..), AuthHeaders, API) where
+module API (UserAuth (..), UserData (..), UserFull (..), UserToken (..), AuthHeaders, API) where
 
 import Data.Aeson
 import Database.SQLite.Simple
@@ -34,9 +34,14 @@ data UserFull = UserFull
   }
   deriving (Eq, Show, Generic, FromRow)
 
+data UserToken = UserToken
+  { id :: Int
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON, FromJWT, ToJWT)
+
 type AuthHeaders = Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie]
 
-type Protected = Auth '[Cookie, JWT] UserData
+type Protected = Auth '[Cookie, JWT] UserToken
 
 type API =
   "auth" :> "register" :> ReqBody '[JSON] UserAuth :> PostCreated '[JSON] UserData

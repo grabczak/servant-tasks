@@ -31,26 +31,26 @@ login cookieSettings jwtSettings UserAuth{name, password} = do
   user <- liftIO $ selectUserByCredentials name password
   case user of
     Nothing -> throwError err401{errBody = "Invalid credentials"}
-    Just user -> do
-      loginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings user
+    Just UserData{id} -> do
+      loginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings UserToken{id}
       case loginAccepted of
         Nothing -> throwError err401{errBody = "Login failed"}
         Just headerBuilder -> do
-          jwt <- liftIO $ makeJWT user jwtSettings Nothing
+          jwt <- liftIO $ makeJWT UserToken{id} jwtSettings Nothing
           case jwt of
             Left _ -> throwError err401{errBody = "JWT creation failed"}
             Right token -> return $ headerBuilder (BSC.unpack token)
 
-userGet :: AuthResult UserData -> Handler UserData
-userGet (Authenticated UserData{id}) = do
+userGet :: AuthResult UserToken -> Handler UserData
+userGet (Authenticated UserToken{id}) = do
   user <- liftIO $ selectUserById id
   case user of
     Nothing -> throwError err404{errBody = "User not found"}
     Just user -> return user
 userGet _ = throwError err401{errBody = "Authentication required"}
 
-userPut :: AuthResult UserData -> UserAuth -> Handler UserData
-userPut (Authenticated UserData{id}) userAuth = do
+userPut :: AuthResult UserToken -> UserAuth -> Handler UserData
+userPut (Authenticated UserToken{id}) userAuth = do
   user <- liftIO $ selectUserById id
   case user of
     Nothing -> throwError err404{errBody = "User not found"}
