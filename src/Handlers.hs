@@ -12,6 +12,7 @@ module Handlers (
   tasksGet,
   tasksPost,
   taskGet,
+  taskPut,
 ) where
 
 import Control.Monad.IO.Class
@@ -93,3 +94,18 @@ taskGet (Authenticated UserToken{id}) taskId = do
         then throwError err403{errBody = "Forbidden"}
         else return task
 taskGet _ _ = throwError err401{errBody = "Authentication required"}
+
+taskPut :: AuthResult UserToken -> Int -> TaskCreate -> Handler TaskFull
+taskPut (Authenticated UserToken{id}) taskId taskCreate = do
+  task <- liftIO $ selectTaskById taskId
+  case task of
+    Nothing -> throwError err404{errBody = "Task not found"}
+    Just task ->
+      if userId task /= id
+        then throwError err403{errBody = "Forbidden"}
+        else do
+          updatedTask <- liftIO $ updateTaskById taskId taskCreate
+          case updatedTask of
+            Nothing -> throwError err500{errBody = "Failed to update task"}
+            Just task -> return task
+taskPut _ _ _ = throwError err401{errBody = "Authentication required"}

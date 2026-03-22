@@ -13,6 +13,7 @@ module DB (
   selectTaskById,
   selectTasksByUserId,
   insertTaskByUserId,
+  updateTaskById,
 ) where
 
 import qualified Data.Text as T
@@ -97,3 +98,8 @@ insertTaskByUserId userId TaskCreate{title, description} = withConnection dbName
   execute conn "INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, ?)" (userId, title, description, False)
   taskId <- lastInsertRowId conn
   selectTaskById $ fromIntegral taskId
+
+updateTaskById :: Int -> TaskCreate -> IO (Maybe TaskFull)
+updateTaskById taskId TaskCreate{title, description} = withConnection dbName $ \conn -> do
+  execute conn "UPDATE tasks SET title = ?, description = ? WHERE id = ?" (title, description, taskId)
+  selectTaskById taskId
