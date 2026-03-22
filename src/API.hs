@@ -77,3 +77,4 @@ type API =
     :<|> Protected :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData
     :<|> Protected :> "user" :> "tasks" :> Get '[JSON] [TaskFull]
     :<|> Protected :> "user" :> "tasks" :> ReqBody '[JSON] TaskCreate :> PostCreated '[JSON] TaskFull
+    :<|> Protected :> "user" :> "tasks" :> Capture "taskId" Int :> Get '[JSON] TaskFull
