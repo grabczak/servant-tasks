@@ -10,6 +10,9 @@ module DB (
   selectUserById,
   selectUserByCredentials,
   updateUserById,
+  selectTaskById,
+  selectTasksByUserId,
+  insertTaskByUserId,
 ) where
 
 import qualified Data.Text as T
@@ -29,6 +32,16 @@ createDB = withConnection dbName $ \conn -> do
         <> "id INTEGER PRIMARY KEY AUTOINCREMENT,"
         <> "name TEXT UNIQUE NOT NULL,"
         <> "password TEXT NOT NULL"
+        <> ")"
+  execute_ conn $
+    Query $
+      "CREATE TABLE IF NOT EXISTS tasks ("
+        <> "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        <> "user_id INTEGER NOT NULL,"
+        <> "title TEXT NOT NULL,"
+        <> "description TEXT NOT NULL,"
+        <> "completed BOOLEAN NOT NULL CHECK (completed IN (0, 1)),"
+        <> "FOREIGN KEY(user_id) REFERENCES users(id)"
         <> ")"
 
 selectFirst :: [a] -> Maybe a
@@ -68,3 +81,19 @@ updateUserById id UserAuth{name, password} = withConnection dbName $ \conn -> do
   hashed <- createHash password
   execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
   selectUserById id
+
+selectTaskById :: Int -> IO (Maybe TaskFull)
+selectTaskById id = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, user_id, title, description, completed FROM tasks WHERE id = ?" (Only id)
+  return $ selectFirst result
+
+selectTasksByUserId :: Int -> IO [TaskFull]
+selectTasksByUserId userId = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, user_id, title, description, completed FROM tasks WHERE user_id = ?" (Only userId)
+  return result
+
+insertTaskByUserId :: Int -> TaskCreate -> IO (Maybe TaskFull)
+insertTaskByUserId userId TaskCreate{title, description} = withConnection dbName $ \conn -> do
+  execute conn "INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, ?)" (userId, title, description, False)
+  taskId <- lastInsertRowId conn
+  selectTaskById $ fromIntegral taskId

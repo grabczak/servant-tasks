@@ -4,7 +4,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module Handlers (register, login, userGet, userPut) where
+module Handlers (
+  register,
+  login,
+  userGet,
+  userPut,
+  tasksGet,
+  tasksPost,
+) where
 
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy.Char8 as BSC
@@ -60,3 +67,17 @@ userPut (Authenticated UserToken{id}) userAuth = do
         Nothing -> throwError err500{errBody = "Failed to update user"}
         Just user -> return user
 userPut _ _ = throwError err401{errBody = "Authentication required"}
+
+tasksGet :: AuthResult UserToken -> Handler [TaskFull]
+tasksGet (Authenticated UserToken{id}) = do
+  tasks <- liftIO $ selectTasksByUserId id
+  return tasks
+tasksGet _ = throwError err401{errBody = "Authentication required"}
+
+tasksPost :: AuthResult UserToken -> TaskCreate -> Handler TaskFull
+tasksPost (Authenticated UserToken{id}) taskCreate = do
+  task <- liftIO $ insertTaskByUserId id taskCreate
+  case task of
+    Nothing -> throwError err500{errBody = "Failed to create task"}
+    Just task -> return task
+tasksPost _ _ = throwError err401{errBody = "Authentication required"}

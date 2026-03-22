@@ -4,7 +4,16 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeOperators #-}
 
-module API (UserAuth (..), UserData (..), UserFull (..), UserToken (..), AuthHeaders, API) where
+module API (
+  UserAuth (..),
+  UserData (..),
+  UserFull (..),
+  UserToken (..),
+  TaskCreate (..),
+  TaskFull (..),
+  AuthHeaders,
+  API,
+) where
 
 import Data.Aeson
 import Database.SQLite.Simple
@@ -17,14 +26,14 @@ data UserAuth = UserAuth
   { name :: String
   , password :: String
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON, FromRow)
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 -- API response
 data UserData = UserData
   { id :: Int
   , name :: String
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON, FromRow, FromJWT, ToJWT)
+  deriving (Eq, Show, Generic, FromJSON, ToJSON, FromRow)
 
 -- Internal record
 data UserFull = UserFull
@@ -34,10 +43,28 @@ data UserFull = UserFull
   }
   deriving (Eq, Show, Generic, FromRow)
 
+-- Token content
 data UserToken = UserToken
   { id :: Int
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON, FromJWT, ToJWT)
+
+-- Task create request
+data TaskCreate = TaskCreate
+  { title :: String
+  , description :: String
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
+-- Task record
+data TaskFull = TaskFull
+  { id :: Int
+  , userId :: Int
+  , title :: String
+  , description :: String
+  , completed :: Bool
+  }
+  deriving (Eq, Show, Generic, FromRow, FromJSON, ToJSON)
 
 type AuthHeaders = Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie]
 
@@ -48,3 +75,5 @@ type API =
     :<|> "auth" :> "login" :> ReqBody '[JSON] UserAuth :> Post '[JSON] (AuthHeaders String)
     :<|> Protected :> "user" :> "me" :> Get '[JSON] UserData
     :<|> Protected :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData
+    :<|> Protected :> "user" :> "tasks" :> Get '[JSON] [TaskFull]
+    :<|> Protected :> "user" :> "tasks" :> ReqBody '[JSON] TaskCreate :> PostCreated '[JSON] TaskFull
