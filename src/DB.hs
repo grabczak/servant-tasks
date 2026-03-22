@@ -17,7 +17,6 @@ module DB (
   deleteTaskById,
 ) where
 
-import qualified Data.Text as T
 import Database.SQLite.Simple
 
 import API
@@ -73,7 +72,7 @@ selectUserByCredentials _name _password = withConnection dbName $ \conn -> do
   case selectFirst result of
     Nothing -> return Nothing
     Just UserFull{id, name, password} -> do
-      isValid <- verifyHash _password (T.pack password)
+      isValid <- verifyHash _password password
       return $ case isValid of
         False -> Nothing
         True -> Just $ UserData{id, name}
