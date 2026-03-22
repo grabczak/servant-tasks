@@ -18,6 +18,7 @@ module Handlers (
 
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy.Char8 as BSC
+import Data.Time.Clock
 import Servant
 import Servant.Auth.Server
 
@@ -46,7 +47,9 @@ login cookieSettings jwtSettings UserAuth{name, password} = do
       case loginAccepted of
         Nothing -> throwError err401{errBody = "Login failed"}
         Just headerBuilder -> do
-          jwt <- liftIO $ makeJWT UserToken{id} jwtSettings Nothing
+          now <- liftIO getCurrentTime
+          let expiry = addUTCTime (secondsToNominalDiffTime 2592000) now -- One month expiry
+          jwt <- liftIO $ makeJWT UserToken{id} jwtSettings (Just expiry)
           case jwt of
             Left _ -> throwError err401{errBody = "JWT creation failed"}
             Right token -> return $ headerBuilder (BSC.unpack token)

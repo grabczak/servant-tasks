@@ -30,6 +30,7 @@ dependencies:
   - servant-server
   - sqlite-simple
   - text
+  - time
   - wai
   - warp
 
