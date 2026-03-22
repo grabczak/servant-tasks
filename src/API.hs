@@ -76,7 +76,7 @@ type API =
     :<|> Protected :> "user" :> "me" :> Get '[JSON] UserData
     :<|> Protected :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData
     :<|> Protected :> "user" :> "tasks" :> Get '[JSON] [TaskFull]
-    :<|> Protected :> "user" :> "tasks" :> ReqBody '[JSON] TaskCreate :> PostCreated '[JSON] TaskFull
-    :<|> Protected :> "user" :> "tasks" :> Capture "taskId" Int :> Get '[JSON] TaskFull
-    :<|> Protected :> "user" :> "tasks" :> Capture "taskId" Int :> ReqBody '[JSON] TaskCreate :> Put '[JSON] TaskFull
-    :<|> Protected :> "user" :> "tasks" :> Capture "taskId" Int :> Delete '[JSON] NoContent
+    :<|> Protected :> "user" :> "task" :> ReqBody '[JSON] TaskCreate :> PostCreated '[JSON] TaskFull
+    :<|> Protected :> "user" :> "task" :> Capture "taskId" Int :> Get '[JSON] TaskFull
+    :<|> Protected :> "user" :> "task" :> Capture "taskId" Int :> ReqBody '[JSON] TaskCreate :> Put '[JSON] TaskFull
+    :<|> Protected :> "user" :> "task" :> Capture "taskId" Int :> Delete '[JSON] NoContent
