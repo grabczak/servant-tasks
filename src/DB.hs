@@ -94,14 +94,14 @@ selectTasksByUserId userId = withConnection dbName $ \conn -> do
   return result
 
 insertTaskByUserId :: Int -> TaskCreate -> IO (Maybe TaskFull)
-insertTaskByUserId userId TaskCreate{title, description} = withConnection dbName $ \conn -> do
-  execute conn "INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, ?)" (userId, title, description, False)
+insertTaskByUserId userId TaskCreate{title, description, completed} = withConnection dbName $ \conn -> do
+  execute conn "INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, ?)" (userId, title, description, completed)
   taskId <- lastInsertRowId conn
   selectTaskById $ fromIntegral taskId
 
 updateTaskById :: Int -> TaskCreate -> IO (Maybe TaskFull)
-updateTaskById taskId TaskCreate{title, description} = withConnection dbName $ \conn -> do
-  execute conn "UPDATE tasks SET title = ?, description = ? WHERE id = ?" (title, description, taskId)
+updateTaskById taskId TaskCreate{title, description, completed} = withConnection dbName $ \conn -> do
+  execute conn "UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?" (title, description, completed, taskId)
   selectTaskById taskId
 
 deleteTaskById :: Int -> IO ()

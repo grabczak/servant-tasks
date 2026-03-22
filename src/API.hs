@@ -53,6 +53,7 @@ data UserToken = UserToken
 data TaskCreate = TaskCreate
   { title :: String
   , description :: String
+  , completed :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
