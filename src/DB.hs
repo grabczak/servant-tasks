@@ -6,9 +6,10 @@
 module DB (
   createDB,
   insertUser,
-  selectUserByName,
-  selectUserById,
-  selectUserByCredentials,
+  selectUserDataById,
+  selectUserDataByName,
+  selectUserFullById,
+  selectUserFullByName,
   updateUserById,
   selectTaskById,
   selectTasksByUserId,
@@ -56,40 +57,31 @@ insertUser UserAuth{name, password} = withConnection dbName $ \conn -> do
   userId <- lastInsertRowId conn
   return $ fromIntegral userId
 
-selectUserByName :: String -> IO (Maybe UserData)
-selectUserByName name = withConnection dbName $ \conn -> do
-  result <- query conn "SELECT id, name FROM users WHERE name = ?" (Only name)
-  return $ selectFirst result
-
-selectUserById :: Int -> IO (Maybe UserData)
-selectUserById id = withConnection dbName $ \conn -> do
+selectUserDataById :: Int -> IO (Maybe UserData)
+selectUserDataById id = withConnection dbName $ \conn -> do
   result <- query conn "SELECT id, name FROM users WHERE id = ?" (Only id)
   return $ selectFirst result
 
-selectUserByCredentials :: String -> String -> IO (Maybe UserData)
-selectUserByCredentials _name _password = withConnection dbName $ \conn -> do
-  result <- query conn "SELECT id, name, password FROM users WHERE name = ?" (Only _name)
-  case selectFirst result of
-    Nothing -> return Nothing
-    Just UserFull{id, name, password} -> do
-      isValid <- verifyHash _password password
-      return $ case isValid of
-        False -> Nothing
-        True -> Just $ UserData{id, name}
+selectUserDataByName :: String -> IO (Maybe UserData)
+selectUserDataByName name = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, name FROM users WHERE name = ?" (Only name)
+  return $ selectFirst result
 
-updateUserById :: Int -> UserPut -> IO (Maybe UserData)
-updateUserById id UserPut{name, oldPassword, newPassword} = withConnection dbName $ \conn -> do
+selectUserFullById :: Int -> IO (Maybe UserFull)
+selectUserFullById id = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, name, password FROM users WHERE id = ?" (Only id)
+  return $ selectFirst result
+
+selectUserFullByName :: String -> IO (Maybe UserFull)
+selectUserFullByName name = withConnection dbName $ \conn -> do
   result <- query conn "SELECT id, name, password FROM users WHERE name = ?" (Only name)
-  case selectFirst result of
-    Nothing -> return Nothing
-    Just UserFull{password} -> do
-      isValid <- verifyHash oldPassword password
-      case isValid of
-        False -> return Nothing
-        True -> do
-          hashed <- createHash newPassword
-          execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
-          selectUserById id
+  return $ selectFirst result
+
+updateUserById :: Int -> UserAuth -> IO (Maybe UserData)
+updateUserById id UserAuth{name, password} = withConnection dbName $ \conn -> do
+  hashed <- createHash password
+  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
+  selectUserDataById id
 
 selectTaskById :: Int -> IO (Maybe TaskFull)
 selectTaskById id = withConnection dbName $ \conn -> do

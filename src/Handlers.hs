@@ -26,45 +26,53 @@ import Lib
 
 register :: UserAuth -> Handler UserData
 register UserAuth{name, password} = do
-  user <- liftIO $ selectUserByName name
+  user <- liftIO $ selectUserDataByName name
   case user of
     Just _ -> throwError err409{errBody = "User already exists"}
     Nothing -> do
       id <- liftIO $ insertUser UserAuth{name, password}
-      user <- liftIO $ selectUserById id
+      user <- liftIO $ selectUserDataById id
       case user of
         Nothing -> throwError err500{errBody = "Failed to retrieve user after registration"}
         Just user -> return user
 
 login :: CookieSettings -> JWTSettings -> UserAuth -> Handler (AuthHeaders String)
 login cookieSettings jwtSettings UserAuth{name, password} = do
-  user <- liftIO $ selectUserByCredentials name password
+  user <- liftIO $ selectUserFullByName name
   case user of
     Nothing -> throwError err401{errBody = "Invalid credentials"}
-    Just UserData{id} -> do
-      sessionResult <- liftIO $ createSession cookieSettings jwtSettings UserToken{id}
-      case sessionResult of
-        Left err -> throwError err
-        Right authHeaders -> return authHeaders
+    Just UserFull{id, password = hash} -> do
+      isValid <- liftIO $ verifyHash password hash
+      case isValid of
+        False -> throwError err401{errBody = "Invalid credentials"}
+        True -> do
+          sessionResult <- liftIO $ createSession cookieSettings jwtSettings UserToken{id}
+          case sessionResult of
+            Left err -> throwError err
+            Right authHeaders -> return authHeaders
 
 userGet :: AuthResult UserToken -> Handler UserData
 userGet (Authenticated UserToken{id}) = do
-  user <- liftIO $ selectUserById id
+  user <- liftIO $ selectUserDataById id
   case user of
     Nothing -> throwError err404{errBody = "User not found"}
     Just user -> return user
 userGet _ = throwError err401{errBody = "Authentication required"}
 
 userPut :: AuthResult UserToken -> UserPut -> Handler UserData
-userPut (Authenticated UserToken{id}) userPut = do
-  user <- liftIO $ selectUserById id
+userPut (Authenticated UserToken{id}) UserPut{name, oldPassword, newPassword} = do
+  user <- liftIO $ selectUserFullById id
   case user of
     Nothing -> throwError err404{errBody = "User not found"}
-    Just _ -> do
-      updatedUser <- liftIO $ updateUserById id userPut
-      case updatedUser of
-        Nothing -> throwError err500{errBody = "Failed to update user"}
-        Just user -> return user
+    Just UserFull{password = hash} -> do
+      isValid <- liftIO $ verifyHash oldPassword hash
+      case isValid of
+        False -> throwError err401{errBody = "Invalid credentials"}
+        True -> do
+          updatedUser <- liftIO $ updateUserById id UserAuth{name, password = newPassword}
+          case updatedUser of
+            Nothing -> throwError err500{errBody = "Failed to update user"}
+            Just user -> return user
 userPut _ _ = throwError err401{errBody = "Authentication required"}
 
 tasksGet :: AuthResult UserToken -> Handler [TaskFull]
