@@ -29,12 +29,13 @@ import Queries
 register :: UserAuth -> Handler UserData
 register userAuth = do
   user <- liftIO $ selectUserDataByName userAuth.name
-  when (isJust user) $ throwError err409{errBody = "User already exists"}
+  when (isJust user) $
+    throwError err409{errBody = "User already exists"}
 
   hashedPassword <- liftIO $ createHash userAuth.password
   createdUser <-
     liftIO (insertUser UserAuth{name = userAuth.name, password = hashedPassword})
-      >>= maybe (throwError err500{errBody = "Failed to retrieve user after registration"}) return
+      >>= maybe (throwError err500{errBody = "Failed to create user"}) return
 
   return createdUser
 
@@ -45,7 +46,8 @@ login cookieSettings jwtSettings userAuth = do
       >>= maybe (throwError err401{errBody = "Invalid credentials"}) return
 
   passwordValid <- liftIO $ verifyHash userAuth.password user.password
-  unless passwordValid $ throwError err401{errBody = "Invalid credentials"}
+  unless passwordValid $
+    throwError err401{errBody = "Invalid credentials"}
 
   let token = UserToken{id = user.id}
 
@@ -79,10 +81,12 @@ userPut (Authenticated userToken) userUpdate = do
       >>= maybe (throwError err404{errBody = "User not found"}) return
 
   otherUser <- liftIO $ selectUserDataByName userUpdate.name
-  when (isJust otherUser) $ throwError err409{errBody = "User already exists"}
+  when (isJust otherUser) $
+    throwError err409{errBody = "User already exists"}
 
   passwordValid <- liftIO (verifyHash userUpdate.oldPassword user.password)
-  unless passwordValid $ throwError err401{errBody = "Invalid credentials"}
+  unless passwordValid $
+    throwError err401{errBody = "Invalid credentials"}
 
   hashedPassword <- liftIO $ createHash userUpdate.newPassword
 
@@ -114,7 +118,8 @@ taskGet (Authenticated userToken) taskId = do
     liftIO (selectTaskById taskId)
       >>= maybe (throwError err404{errBody = "Task not found"}) return
 
-  when (task.userId /= userToken.id) $ throwError err403{errBody = "Forbidden"}
+  when (task.userId /= userToken.id) $
+    throwError err403{errBody = "Forbidden"}
 
   return task
 taskGet _ _ = throwError err401{errBody = "Authentication required"}
@@ -125,7 +130,8 @@ taskPut (Authenticated userToken) taskId taskCreate = do
     liftIO (selectTaskById taskId)
       >>= maybe (throwError err404{errBody = "Task not found"}) return
 
-  when (task.userId /= userToken.id) $ throwError err403{errBody = "Forbidden"}
+  when (task.userId /= userToken.id) $
+    throwError err403{errBody = "Forbidden"}
 
   updatedTask <-
     liftIO (updateTaskById taskId taskCreate)
