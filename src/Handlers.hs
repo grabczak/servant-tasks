@@ -17,13 +17,12 @@ module Handlers (
 ) where
 
 import Control.Monad.IO.Class
-import qualified Data.ByteString.Lazy.Char8 as BSC
-import Data.Time.Clock
 import Servant
 import Servant.Auth.Server
 
 import API
 import DB
+import Lib
 
 register :: UserAuth -> Handler UserData
 register UserAuth{name, password} = do
@@ -43,16 +42,10 @@ login cookieSettings jwtSettings UserAuth{name, password} = do
   case user of
     Nothing -> throwError err401{errBody = "Invalid credentials"}
     Just UserData{id} -> do
-      loginAccepted <- liftIO $ acceptLogin cookieSettings jwtSettings UserToken{id}
-      case loginAccepted of
-        Nothing -> throwError err401{errBody = "Login failed"}
-        Just headerBuilder -> do
-          now <- liftIO getCurrentTime
-          let expiry = addUTCTime (secondsToNominalDiffTime 2592000) now -- One month expiry
-          jwt <- liftIO $ makeJWT UserToken{id} jwtSettings (Just expiry)
-          case jwt of
-            Left _ -> throwError err401{errBody = "JWT creation failed"}
-            Right token -> return $ headerBuilder (BSC.unpack token)
+      sessionResult <- liftIO $ createSession cookieSettings jwtSettings UserToken{id}
+      case sessionResult of
+        Left err -> throwError err
+        Right authHeaders -> return authHeaders
 
 userGet :: AuthResult UserToken -> Handler UserData
 userGet (Authenticated UserToken{id}) = do
