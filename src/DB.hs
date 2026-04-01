@@ -21,7 +21,6 @@ module DB (
 import Database.SQLite.Simple
 
 import API
-import Lib
 
 dbName :: String
 dbName = "app.db"
@@ -52,8 +51,7 @@ selectFirst (x : _) = Just x
 
 insertUser :: UserAuth -> IO Int
 insertUser UserAuth{name, password} = withConnection dbName $ \conn -> do
-  hashed <- createHash password
-  execute conn "INSERT INTO users (name, password) VALUES (?, ?)" (name, hashed)
+  execute conn "INSERT INTO users (name, password) VALUES (?, ?)" (name, password)
   userId <- lastInsertRowId conn
   return $ fromIntegral userId
 
@@ -79,8 +77,7 @@ selectUserFullByName name = withConnection dbName $ \conn -> do
 
 updateUserById :: Int -> UserAuth -> IO (Maybe UserData)
 updateUserById id UserAuth{name, password} = withConnection dbName $ \conn -> do
-  hashed <- createHash password
-  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
+  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, password, id)
   selectUserDataById id
 
 selectTaskById :: Int -> IO (Maybe TaskFull)

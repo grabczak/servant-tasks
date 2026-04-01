@@ -30,7 +30,8 @@ register UserAuth{name, password} = do
   case user of
     Just _ -> throwError err409{errBody = "User already exists"}
     Nothing -> do
-      id <- liftIO $ insertUser UserAuth{name, password}
+      hashed <- liftIO $ createHash password
+      id <- liftIO $ insertUser UserAuth{name, password = hashed}
       user <- liftIO $ selectUserDataById id
       case user of
         Nothing -> throwError err500{errBody = "Failed to retrieve user after registration"}
@@ -69,7 +70,8 @@ userPut (Authenticated UserToken{id}) UserPut{name, oldPassword, newPassword} = 
       case isValid of
         False -> throwError err401{errBody = "Invalid credentials"}
         True -> do
-          updatedUser <- liftIO $ updateUserById id UserAuth{name, password = newPassword}
+          hashed <- liftIO $ createHash newPassword
+          updatedUser <- liftIO $ updateUserById id UserAuth{name, password = hashed}
           case updatedUser of
             Nothing -> throwError err500{errBody = "Failed to update user"}
             Just user -> return user
