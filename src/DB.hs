@@ -1,7 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module DB (
   createDB,
@@ -50,14 +49,14 @@ selectFirst [] = Nothing
 selectFirst (x : _) = Just x
 
 insertUser :: UserAuth -> IO Int
-insertUser UserAuth{name, password} = withConnection dbName $ \conn -> do
-  execute conn "INSERT INTO users (name, password) VALUES (?, ?)" (name, password)
+insertUser user = withConnection dbName $ \conn -> do
+  execute conn "INSERT INTO users (name, password) VALUES (?, ?)" (user.name, user.password)
   userId <- lastInsertRowId conn
   return $ fromIntegral userId
 
 selectUserDataById :: Int -> IO (Maybe UserData)
-selectUserDataById id = withConnection dbName $ \conn -> do
-  result <- query conn "SELECT id, name FROM users WHERE id = ?" (Only id)
+selectUserDataById userId = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, name FROM users WHERE id = ?" (Only userId)
   return $ selectFirst result
 
 selectUserDataByName :: String -> IO (Maybe UserData)
@@ -66,8 +65,8 @@ selectUserDataByName name = withConnection dbName $ \conn -> do
   return $ selectFirst result
 
 selectUserFullById :: Int -> IO (Maybe UserFull)
-selectUserFullById id = withConnection dbName $ \conn -> do
-  result <- query conn "SELECT id, name, password FROM users WHERE id = ?" (Only id)
+selectUserFullById userId = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, name, password FROM users WHERE id = ?" (Only userId)
   return $ selectFirst result
 
 selectUserFullByName :: String -> IO (Maybe UserFull)
@@ -76,13 +75,13 @@ selectUserFullByName name = withConnection dbName $ \conn -> do
   return $ selectFirst result
 
 updateUserById :: Int -> UserAuth -> IO (Maybe UserData)
-updateUserById id UserAuth{name, password} = withConnection dbName $ \conn -> do
-  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, password, id)
-  selectUserDataById id
+updateUserById userId user = withConnection dbName $ \conn -> do
+  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (user.name, user.password, userId)
+  selectUserDataById userId
 
 selectTaskById :: Int -> IO (Maybe TaskFull)
-selectTaskById id = withConnection dbName $ \conn -> do
-  result <- query conn "SELECT id, user_id, title, description, completed FROM tasks WHERE id = ?" (Only id)
+selectTaskById taskId = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, user_id, title, description, completed FROM tasks WHERE id = ?" (Only taskId)
   return $ selectFirst result
 
 selectTasksByUserId :: Int -> IO [TaskFull]
@@ -91,14 +90,14 @@ selectTasksByUserId userId = withConnection dbName $ \conn -> do
   return result
 
 insertTaskByUserId :: Int -> TaskCreate -> IO (Maybe TaskFull)
-insertTaskByUserId userId TaskCreate{title, description, completed} = withConnection dbName $ \conn -> do
-  execute conn "INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, ?)" (userId, title, description, completed)
+insertTaskByUserId userId task = withConnection dbName $ \conn -> do
+  execute conn "INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, ?)" (userId, task.title, task.description, task.completed)
   taskId <- lastInsertRowId conn
   selectTaskById $ fromIntegral taskId
 
 updateTaskById :: Int -> TaskCreate -> IO (Maybe TaskFull)
-updateTaskById taskId TaskCreate{title, description, completed} = withConnection dbName $ \conn -> do
-  execute conn "UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?" (title, description, completed, taskId)
+updateTaskById taskId task = withConnection dbName $ \conn -> do
+  execute conn "UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?" (task.title, task.description, task.completed, taskId)
   selectTaskById taskId
 
 deleteTaskById :: Int -> IO ()
