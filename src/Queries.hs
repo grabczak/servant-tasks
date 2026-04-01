@@ -48,11 +48,11 @@ selectFirst :: [a] -> Maybe a
 selectFirst [] = Nothing
 selectFirst (x : _) = Just x
 
-insertUser :: UserAuth -> IO Int
+insertUser :: UserAuth -> IO (Maybe UserData)
 insertUser user = withConnection dbName $ \conn -> do
   execute conn "INSERT INTO users (name, password) VALUES (?, ?)" (user.name, user.password)
-  userId <- lastInsertRowId conn
-  return $ fromIntegral userId
+  createdUserId <- lastInsertRowId conn
+  selectUserDataById $ fromIntegral createdUserId
 
 selectUserDataById :: Int -> IO (Maybe UserData)
 selectUserDataById userId = withConnection dbName $ \conn -> do

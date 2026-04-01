@@ -32,9 +32,8 @@ register userAuth = do
   when (isJust user) $ throwError err409{errBody = "User already exists"}
 
   hashedPassword <- liftIO $ createHash userAuth.password
-  createdUserId <- liftIO $ insertUser UserAuth{name = userAuth.name, password = hashedPassword}
   createdUser <-
-    liftIO (selectUserDataById createdUserId)
+    liftIO (insertUser UserAuth{name = userAuth.name, password = hashedPassword})
       >>= maybe (throwError err500{errBody = "Failed to retrieve user after registration"}) return
 
   return createdUser
