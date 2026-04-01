@@ -78,6 +78,9 @@ userPut (Authenticated userToken) userUpdate = do
     liftIO (selectUserFullById userToken.id)
       >>= maybe (throwError err404{errBody = "User not found"}) return
 
+  otherUser <- liftIO $ selectUserDataByName userUpdate.name
+  when (isJust otherUser) $ throwError err409{errBody = "User already exists"}
+
   passwordValid <- liftIO (verifyHash userUpdate.oldPassword user.password)
   unless passwordValid $ throwError err401{errBody = "Invalid credentials"}
 
