@@ -77,11 +77,19 @@ selectUserByCredentials _name _password = withConnection dbName $ \conn -> do
         False -> Nothing
         True -> Just $ UserData{id, name}
 
-updateUserById :: Int -> UserAuth -> IO (Maybe UserData)
-updateUserById id UserAuth{name, password} = withConnection dbName $ \conn -> do
-  hashed <- createHash password
-  execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
-  selectUserById id
+updateUserById :: Int -> UserPut -> IO (Maybe UserData)
+updateUserById id UserPut{name, oldPassword, newPassword} = withConnection dbName $ \conn -> do
+  result <- query conn "SELECT id, name, password FROM users WHERE name = ?" (Only name)
+  case selectFirst result of
+    Nothing -> return Nothing
+    Just UserFull{password} -> do
+      isValid <- verifyHash oldPassword password
+      case isValid of
+        False -> return Nothing
+        True -> do
+          hashed <- createHash newPassword
+          execute conn "UPDATE users SET name = ?, password = ? WHERE id = ?" (name, hashed, id)
+          selectUserById id
 
 selectTaskById :: Int -> IO (Maybe TaskFull)
 selectTaskById id = withConnection dbName $ \conn -> do

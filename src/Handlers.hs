@@ -62,13 +62,13 @@ userGet (Authenticated UserToken{id}) = do
     Just user -> return user
 userGet _ = throwError err401{errBody = "Authentication required"}
 
-userPut :: AuthResult UserToken -> UserAuth -> Handler UserData
-userPut (Authenticated UserToken{id}) userAuth = do
+userPut :: AuthResult UserToken -> UserPut -> Handler UserData
+userPut (Authenticated UserToken{id}) userPut = do
   user <- liftIO $ selectUserById id
   case user of
     Nothing -> throwError err404{errBody = "User not found"}
     Just _ -> do
-      updatedUser <- liftIO $ updateUserById id userAuth
+      updatedUser <- liftIO $ updateUserById id userPut
       case updatedUser of
         Nothing -> throwError err500{errBody = "Failed to update user"}
         Just user -> return user

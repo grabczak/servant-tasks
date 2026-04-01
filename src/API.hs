@@ -8,6 +8,7 @@ module API (
   UserAuth (..),
   UserData (..),
   UserFull (..),
+  UserPut (..),
   UserToken (..),
   TaskCreate (..),
   TaskFull (..),
@@ -43,6 +44,14 @@ data UserFull = UserFull
   }
   deriving (Eq, Show, Generic, FromRow)
 
+-- User put request
+data UserPut = UserPut
+  { name :: String
+  , oldPassword :: String
+  , newPassword :: String
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
 -- Token content
 data UserToken = UserToken
   { id :: Int
@@ -75,7 +84,7 @@ type API =
   "auth" :> "register" :> ReqBody '[JSON] UserAuth :> PostCreated '[JSON] UserData
     :<|> "auth" :> "login" :> ReqBody '[JSON] UserAuth :> Post '[JSON] (AuthHeaders String)
     :<|> Protected :> "user" :> "me" :> Get '[JSON] UserData
-    :<|> Protected :> "user" :> "me" :> ReqBody '[JSON] UserAuth :> Put '[JSON] UserData
+    :<|> Protected :> "user" :> "me" :> ReqBody '[JSON] UserPut :> Put '[JSON] UserData
     :<|> Protected :> "user" :> "tasks" :> Get '[JSON] [TaskFull]
     :<|> Protected :> "user" :> "task" :> ReqBody '[JSON] TaskCreate :> PostCreated '[JSON] TaskFull
     :<|> Protected :> "user" :> "task" :> Capture "taskId" Int :> Get '[JSON] TaskFull
