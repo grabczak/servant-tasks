@@ -11,7 +11,7 @@ collection:
     meta:
       id: fld_cb82a113eecf407898d6e34040b89e35
       created: 1774029973355
-      modified: 1774203204959
+      modified: 1775070192564
       sortKey: -1774029973355
       description: ""
     children:
@@ -43,7 +43,7 @@ collection:
         meta:
           id: req_697792383d674492b61c079fc5aa8761
           created: 1774031530448
-          modified: 1774172984384
+          modified: 1775070145862
           isPrivate: false
           description: ""
           sortKey: -1774031530448
@@ -52,8 +52,9 @@ collection:
           mimeType: application/json
           text: |-
             {
-            	"name": "John Doe",
-            	"password": "password"
+            	"name": "John Doe II",
+            	"oldPassword": "password",
+            	"newPassword": "password2"
             }
         headers:
           - name: Content-Type
@@ -233,7 +234,7 @@ collection:
     meta:
       id: fld_37d34865b1f64307a492bbccc3b4540b
       created: 1774029997047
-      modified: 1774203125547
+      modified: 1775070130514
       sortKey: -1774029997047
       description: ""
     children:
@@ -242,7 +243,7 @@ collection:
         meta:
           id: req_1884e307f4a8481da513521ff84752d8
           created: 1773750042766
-          modified: 1774199884273
+          modified: 1775070093668
           isPrivate: false
           description: ""
           sortKey: -1774030001893
@@ -274,7 +275,7 @@ collection:
         meta:
           id: req_e4700f5eec8148c8abded839ad22b5f4
           created: 1773913441566
-          modified: 1774174166166
+          modified: 1775065865207
           isPrivate: false
           description: ""
           sortKey: -1774030001793
@@ -317,19 +318,19 @@ cookieJar:
   meta:
     id: jar_8ac6dda2b38a4fc988e7f114b70f819e
     created: 1773750042764
-    modified: 1774203204968
+    modified: 1775070192569
   cookies:
-    - id: 3b090054-63c2-47a9-86c7-5256473841e3
+    - id: 2d080c78-68d8-4788-b489-56b1d9168862
       key: JWT-Cookie
-      value: eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9fQ.wvuVsiuo4SjJee3P-3OF8RKuFL57p8i2FWFLTirhax2S5lgezmyro-Agztfnf-glLpQETx4nH2Oo7THWzVWO3Q
+      value: eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9fQ.Hhw8cAtnA-wVmTVY0fE8RdiT77vZOCCRZpr5N5k-nJuKHYmXmGRU49ZUFJnBDuzxeireiYgMw38hBjPHj_O9lg
       domain: localhost
       path: /
       secure: true
       httpOnly: true
       hostOnly: true
-    - id: d9c40f9e-4cf1-4c11-88c9-75caf2b076fa
+    - id: f834615b-117f-4092-8dcb-58b89d04869a
       key: XSRF-TOKEN
-      value: F2+NXKSwB8G/kKxpaUWP9EUyi5gH4lBZ961thMAoKdU=
+      value: AekRqvzRe80z7tZ0ayUyVV2OIZygp/VRyrEInPmfASw=
       domain: localhost
       path: /
       secure: true
@@ -340,8 +341,8 @@ environments:
   meta:
     id: env_d113373f09374677981ba642ac2bdd16
     created: 1773750042763
-    modified: 1774203204959
+    modified: 1775070192564
     isPrivate: false
   data:
     baseUrl: localhost:8080
-    token: eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9LCJleHAiOjEuNzc2Nzk1MTI1NTMxNTEzZTl9.XsFscAss4Mona-lSg9rA4GWAAzZAwaThEPh9GUQDdNluWfoqHo55o_qIky8Gje9CA-TcBBRassjNXujXNLKljA
+    token: eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9LCJleHAiOjEuNzc3NjYyMTMwNDk4Njc2ZTl9.ZRboEaeE0ozUmcquvGpU18nopuarkzXxMtRLXykFaQJIua1t4nKaMDmhWV-zML8veg4sKmtqj4gnshnu3eHcEQ
