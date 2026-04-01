@@ -25,7 +25,6 @@ dependencies:
   - bytestring
   - password
   - servant
-  - servant
   - servant-auth-server
   - servant-server
   - sqlite-simple
