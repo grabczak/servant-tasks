@@ -10,7 +10,7 @@ import Data.Time.Clock
 import Servant
 import Servant.Auth.Server
 
-import API
+import Api
 
 createHash :: String -> IO String
 createHash str = do

@@ -18,9 +18,9 @@ import Control.Monad.IO.Class
 import Servant
 import Servant.Auth.Server
 
-import API
-import DB
+import Api
 import Lib
+import Queries
 
 register :: UserAuth -> Handler UserData
 register userAuth = do

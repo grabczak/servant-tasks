@@ -25,10 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      API
-      DB
+      Api
       Handlers
       Lib
+      Queries
   other-modules:
       Paths_servant_tasks
   autogen-modules:

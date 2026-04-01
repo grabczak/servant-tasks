@@ -4,9 +4,9 @@ import Network.Wai.Handler.Warp
 import Servant
 import Servant.Auth.Server
 
-import API
-import DB
+import Api
 import Handlers
+import Queries
 
 port :: Int
 port = 8080

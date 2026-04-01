@@ -4,7 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeOperators #-}
 
-module API (
+module Api (
   UserAuth (..),
   UserData (..),
   UserFull (..),

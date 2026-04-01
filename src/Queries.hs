@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module DB (
+module Queries (
   createDB,
   insertUser,
   selectUserDataById,
@@ -19,7 +19,7 @@ module DB (
 
 import Database.SQLite.Simple
 
-import API
+import Api
 
 dbName :: String
 dbName = "app.db"
