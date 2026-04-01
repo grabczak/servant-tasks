@@ -14,7 +14,11 @@ module Handlers (
   taskDelete,
 ) where
 
+import Control.Monad
 import Control.Monad.IO.Class
+import qualified Data.ByteString.Lazy.Char8 as BSC
+import Data.Maybe
+import Data.Time
 import Servant
 import Servant.Auth.Server
 
@@ -24,55 +28,67 @@ import Queries
 
 register :: UserAuth -> Handler UserData
 register userAuth = do
-  mUser <- liftIO $ selectUserDataByName userAuth.name
-  case mUser of
-    Just _ -> throwError err409{errBody = "User already exists"}
-    Nothing -> do
-      hashedPassword <- liftIO $ createHash userAuth.password
-      createdUserId <- liftIO $ insertUser UserAuth{name = userAuth.name, password = hashedPassword}
-      mCreatedUser <- liftIO $ selectUserDataById createdUserId
-      case mCreatedUser of
-        Nothing -> throwError err500{errBody = "Failed to retrieve user after registration"}
-        Just createdUser -> return createdUser
+  user <- liftIO $ selectUserDataByName userAuth.name
+  when (isJust user) $ throwError err409{errBody = "User already exists"}
+
+  hashedPassword <- liftIO $ createHash userAuth.password
+  createdUserId <- liftIO $ insertUser UserAuth{name = userAuth.name, password = hashedPassword}
+  createdUser <-
+    liftIO (selectUserDataById createdUserId)
+      >>= maybe (throwError err500{errBody = "Failed to retrieve user after registration"}) return
+
+  return createdUser
 
 login :: CookieSettings -> JWTSettings -> UserAuth -> Handler (AuthHeaders String)
 login cookieSettings jwtSettings userAuth = do
-  mUser <- liftIO $ selectUserFullByName userAuth.name
-  case mUser of
-    Nothing -> throwError err401{errBody = "Invalid credentials"}
-    Just user -> do
-      isValid <- liftIO $ verifyHash userAuth.password user.password
-      case isValid of
-        False -> throwError err401{errBody = "Invalid credentials"}
-        True -> do
-          mSession <- liftIO $ createSession cookieSettings jwtSettings UserToken{id = user.id}
-          case mSession of
-            Left err -> throwError err
-            Right session -> return session
+  user <-
+    liftIO (selectUserFullByName userAuth.name)
+      >>= maybe (throwError err401{errBody = "Invalid credentials"}) return
+
+  passwordValid <- liftIO $ verifyHash userAuth.password user.password
+  unless passwordValid $ throwError err401{errBody = "Invalid credentials"}
+
+  let token = UserToken{id = user.id}
+
+  headerBuilder <-
+    liftIO (acceptLogin cookieSettings jwtSettings token)
+      >>= maybe (throwError err401{errBody = "Login failed"}) return
+
+  now <- liftIO getCurrentTime
+  let oneMonth = secondsToNominalDiffTime 2592000
+  let expiry = addUTCTime oneMonth now
+
+  jwt <-
+    liftIO (makeJWT token jwtSettings (Just expiry))
+      >>= either (const $ throwError err401{errBody = "JWT creation failed"}) return
+
+  return $ headerBuilder (BSC.unpack jwt)
 
 userGet :: AuthResult UserToken -> Handler UserData
 userGet (Authenticated userToken) = do
-  mUser <- liftIO $ selectUserDataById userToken.id
-  case mUser of
-    Nothing -> throwError err404{errBody = "User not found"}
-    Just user -> return user
+  user <-
+    liftIO (selectUserDataById userToken.id)
+      >>= maybe (throwError err404{errBody = "User not found"}) return
+
+  return user
 userGet _ = throwError err401{errBody = "Authentication required"}
 
 userPut :: AuthResult UserToken -> UserUpdate -> Handler UserData
 userPut (Authenticated userToken) userUpdate = do
-  mUser <- liftIO $ selectUserFullById userToken.id
-  case mUser of
-    Nothing -> throwError err404{errBody = "User not found"}
-    Just user -> do
-      isValid <- liftIO $ verifyHash userUpdate.oldPassword user.password
-      case isValid of
-        False -> throwError err401{errBody = "Invalid credentials"}
-        True -> do
-          hashedPassword <- liftIO $ createHash userUpdate.newPassword
-          mUpdatedUser <- liftIO $ updateUserById user.id UserAuth{name = userUpdate.name, password = hashedPassword}
-          case mUpdatedUser of
-            Nothing -> throwError err500{errBody = "Failed to update user"}
-            Just updatedUser -> return updatedUser
+  user <-
+    liftIO (selectUserFullById userToken.id)
+      >>= maybe (throwError err404{errBody = "User not found"}) return
+
+  passwordValid <- liftIO (verifyHash userUpdate.oldPassword user.password)
+  unless passwordValid $ throwError err401{errBody = "Invalid credentials"}
+
+  hashedPassword <- liftIO $ createHash userUpdate.newPassword
+
+  updatedUser <-
+    liftIO (updateUserById user.id UserAuth{name = userUpdate.name, password = hashedPassword})
+      >>= maybe (throwError err500{errBody = "Failed to update user"}) return
+
+  return updatedUser
 userPut _ _ = throwError err401{errBody = "Authentication required"}
 
 tasksGet :: AuthResult UserToken -> Handler [TaskFull]
@@ -83,47 +99,49 @@ tasksGet _ = throwError err401{errBody = "Authentication required"}
 
 tasksPost :: AuthResult UserToken -> TaskCreate -> Handler TaskFull
 tasksPost (Authenticated userToken) taskCreate = do
-  mTask <- liftIO $ insertTaskByUserId userToken.id taskCreate
-  case mTask of
-    Nothing -> throwError err500{errBody = "Failed to create task"}
-    Just task -> return task
+  task <-
+    liftIO (insertTaskByUserId userToken.id taskCreate)
+      >>= maybe (throwError err500{errBody = "Failed to create task"}) return
+
+  return task
 tasksPost _ _ = throwError err401{errBody = "Authentication required"}
 
 taskGet :: AuthResult UserToken -> Int -> Handler TaskFull
 taskGet (Authenticated userToken) taskId = do
-  mTask <- liftIO $ selectTaskById taskId
-  case mTask of
-    Nothing -> throwError err404{errBody = "Task not found"}
-    Just task ->
-      if userId task /= userToken.id
-        then throwError err403{errBody = "Forbidden"}
-        else return task
+  task <-
+    liftIO (selectTaskById taskId)
+      >>= maybe (throwError err404{errBody = "Task not found"}) return
+
+  when (task.userId /= userToken.id) $ throwError err403{errBody = "Forbidden"}
+
+  return task
 taskGet _ _ = throwError err401{errBody = "Authentication required"}
 
 taskPut :: AuthResult UserToken -> Int -> TaskCreate -> Handler TaskFull
 taskPut (Authenticated userToken) taskId taskCreate = do
-  mTask <- liftIO $ selectTaskById taskId
-  case mTask of
-    Nothing -> throwError err404{errBody = "Task not found"}
-    Just task ->
-      if userId task /= userToken.id
-        then throwError err403{errBody = "Forbidden"}
-        else do
-          mUpdatedTask <- liftIO $ updateTaskById taskId taskCreate
-          case mUpdatedTask of
-            Nothing -> throwError err500{errBody = "Failed to update task"}
-            Just updatedTask -> return updatedTask
+  task <-
+    liftIO (selectTaskById taskId)
+      >>= maybe (throwError err404{errBody = "Task not found"}) return
+
+  when (task.userId /= userToken.id) $ throwError err403{errBody = "Forbidden"}
+
+  updatedTask <-
+    liftIO (updateTaskById taskId taskCreate)
+      >>= maybe (throwError err500{errBody = "Failed to update task"}) return
+
+  return updatedTask
 taskPut _ _ _ = throwError err401{errBody = "Authentication required"}
 
 taskDelete :: AuthResult UserToken -> Int -> Handler NoContent
 taskDelete (Authenticated userToken) taskId = do
-  mTask <- liftIO $ selectTaskById taskId
-  case mTask of
-    Nothing -> throwError err404{errBody = "Task not found"}
-    Just task ->
-      if userId task /= userToken.id
-        then throwError err403{errBody = "Forbidden"}
-        else do
-          liftIO $ deleteTaskById taskId
-          return NoContent
+  task <-
+    liftIO (selectTaskById taskId)
+      >>= maybe (throwError err404{errBody = "Task not found"}) return
+
+  when (task.userId /= userToken.id) $
+    throwError err403{errBody = "Forbidden"}
+
+  liftIO $ deleteTaskById taskId
+
+  return NoContent
 taskDelete _ _ = throwError err401{errBody = "Authentication required"}
